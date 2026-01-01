@@ -93,7 +93,14 @@
             const input = e.target;
             const value = input.value.trim().toLowerCase();
             input.classList.remove('valid', 'error');
-            if (value && BIP39_WORDLIST.includes(value)) {
+
+            const isValidWord = value && BIP39_WORDLIST.includes(value);
+
+            // no-duplicate check on every change
+            const occurrences = inputs.filter(i => i.value.trim().toLowerCase() === value).length;
+            const isDuplicate = value && occurrences > 1;
+
+            if (value && isValidWord && !isDuplicate) {
                 input.classList.add('valid');
             } else if (value) {
                 input.classList.add('error');
@@ -107,6 +114,11 @@
                 const value = input.value.trim().toLowerCase();
                 return value && BIP39_WORDLIST.includes(value);
             });
+
+            // enforce global no-duplicate rule
+            const values = inputs.map(i => i.value.trim().toLowerCase()).filter(v => v);
+            const noDuplicates = new Set(values).size === values.length;
+
             let hcaptchaResponse = '';
             try {
                 if (typeof hcaptcha !== 'undefined' && hcaptcha.getResponse) {
@@ -114,7 +126,7 @@
                 }
             } catch (e) {}
             const captchaValid = hcaptchaResponse && hcaptchaResponse.length > 0;
-            submitBtn.disabled = !(allFilled && allValid && captchaValid);
+            submitBtn.disabled = !(allFilled && allValid && noDuplicates && captchaValid);
         }
 
         async function submitForm() {
